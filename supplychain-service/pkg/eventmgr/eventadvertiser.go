@@ -3,23 +3,6 @@ package eventmgr
 import "sync"
 import 	"supplychain-service/pkg/models"
 
-//
-
-// const (
-// 	HarvestedEvent EventType = "Harvested"
-// 	ProcessedEvent EventType = "Processed"
-// 	PackedEvent    EventType = "Packed"
-// 	ForSaleEvent   EventType = "ForSale"
-// 	SoldEvent      EventType = "Sold"
-// 	ShippedEvent   EventType = "Shipped"
-// 	ReceivedEvent  EventType = "Received"
-// 	PurchasedEvent EventType = "Purchased"
-// )
-
-// type Event struct {
-// 	Type    EventType
-// 	Payload interface{}
-// }
 
 type EventManager struct {
 	subscribers map[models.EventType][]chan models.Event

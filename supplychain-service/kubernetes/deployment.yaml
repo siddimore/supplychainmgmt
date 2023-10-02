@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coffeebean-supply-chain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coffeebean-supply-chain
+  template:
+    metadata:
+      labels:
+        app: coffeebean-supply-chain
+    spec:
+      containers:
+      - name: coffeebean-supply-chain
+        image: your-docker-image-name:latest
+        ports:
+        - containerPort: 8080

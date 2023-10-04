@@ -1,21 +1,50 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"github.com/gorilla/mux"
 	"supplychain-service/pkg/apis"
 	"supplychain-service/pkg/service"
+	"supplychain-service/pkg/eventmgr"
 )
+
+type MongoDBConfig struct {
+	ConnectionString string
+	DatabaseName     string
+}
 
 func main() {
 	// Initialize immutable blob service (replace with your actual blob service implementation)
-	blobService, _ := service.NewAzureBlobService("your-account-name", "your-account-key", "your-container-name")
+	// TODO: Remove Blob Service
+	// blobService, _ := service.NewAzureBlobService("your-account-name", "your-account-key", "your-container-name")
+
+	// Load MongoDB configuration (you can load this from a configuration file or environment variables)
+	// Init MongoDB
+	mongoDBConfig := MongoDBConfig{
+		ConnectionString: "mongodb://username:password@localhost:27017", // Replace with your MongoDB connection string
+		DatabaseName:     "your-database-name",                          // Replace with your database name
+	}
+
+	// Initialize MongoDB service
+	mongoDBService, err := service.NewMongoDBService(mongoDBConfig.ConnectionString, mongoDBConfig.DatabaseName)
+	if err != nil {
+		fmt.Printf("Failed to connect to MongoDB:", err)
+		return
+	}
+
+	// Initialize the event manager
+	eventManager := eventmgr.NewEventManager()
+
+	// TODO: Above can be injected using GoContainers 
+	// ex: https://github.com/vardius/gocontainer?utm_campaign=awesomego&utm_medium=referral&utm_source=awesomego
+
 
 	// Initialize API instances for each participant
-	farmerAPI := apis.NewFarmerAPI(blobService)
-	distributorAPI := apis.NewDistributorAPI(blobService)
-	retailerAPI := apis.NewRetailerAPI(blobService)
-	consumerAPI := apis.NewConsumerAPI(blobService)
+	farmerAPI := apis.NewFarmerAPI(mongoDBService, eventManager)
+	distributorAPI := apis.NewDistributorAPI(mongoDBService, eventManager)
+	retailerAPI := apis.NewRetailerAPI(mongoDBService, eventManager)
+	consumerAPI := apis.NewConsumerAPI(mongoDBService, eventManager)
 
 	// Create a new router instance
 	router := mux.NewRouter()

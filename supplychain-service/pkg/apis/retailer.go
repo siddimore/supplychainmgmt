@@ -11,15 +11,14 @@ import (
 
 // RetailerAPI represents the API for the retailer participant.
 type RetailerAPI struct {
-	BlobService *service.AzureBlobService
+	DBService    *service.MongoDBService
+	EventManager *eventmgr.EventManager
 }
 
-var retailerEventManager = eventmgr.NewEventManager()
-
-// NewRetailerAPI creates a new RetailerAPI instance.
-func NewRetailerAPI(blobService *service.AzureBlobService) *RetailerAPI {
+func NewRetailerAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *RetailerAPI {
 	return &RetailerAPI{
-		BlobService: blobService,
+		DBService:    dbService,
+		EventManager: eventManager,
 	}
 }
 
@@ -32,13 +31,13 @@ func (api *RetailerAPI) SellHandler(w http.ResponseWriter, r *http.Request) {
 		product := models.CreateCoffeeProduct("Arabica", "Sold Arabica beans", 13.99)
 		event := models.Event{Name: "Sold", Payload: product}
 
-		// Write the event as an immutable blob
-		if err := api.BlobService.WriteBlob(product, "Sold"); err != nil {
-			http.Error(w, "Failed to write blob", http.StatusInternalServerError)
+		// Write to MongoDB
+		if err := api.DBService.Write(product); err != nil {
+			http.Error(w, "Failed to write product to MongoDB", http.StatusInternalServerError)
 			return
 		}
 
-		retailerEventManager.Advertise("Sold", event)
+		api.EventManager.Advertise("Sold", event)
 
 		// Respond with the sold product
 		w.Header().Set("Content-Type", "application/json")

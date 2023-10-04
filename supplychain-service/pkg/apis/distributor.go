@@ -11,15 +11,16 @@ import (
 )
 
 // DistributorAPI represents the API for the distributor participant.
+// MongodB and EventManager
 type DistributorAPI struct {
-	BlobService *service.AzureBlobService
+	DBService    *service.MongoDBService
+	EventManager *eventmgr.EventManager
 }
 
-var disEventManager = eventmgr.NewEventManager()
-// NewDistributorAPI creates a new DistributorAPI instance.
-func NewDistributorAPI(blobService *service.AzureBlobService) *DistributorAPI {
+func NewDistributorAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *DistributorAPI {
 	return &DistributorAPI{
-		BlobService: blobService,
+		DBService:    dbService,
+		EventManager: eventManager,
 	}
 }
 
@@ -32,13 +33,13 @@ func (api *DistributorAPI) ReceiveHandler(w http.ResponseWriter, r *http.Request
 		product := models.CreateCoffeeProduct("Arabica", "Received Arabica beans", 12.99)
 		event := models.Event{Name: "Received", Payload: product}
 
-		// Write the event as an immutable blob
-		if err := api.BlobService.WriteBlob(product, "Received"); err != nil {
-			http.Error(w, "Failed to write blob", http.StatusInternalServerError)
+		// Write to MongoDB
+		if err := api.DBService.Write(product); err != nil {
+			http.Error(w, "Failed to write product to MongoDB", http.StatusInternalServerError)
 			return
 		}
 
-		disEventManager.Advertise("Received", event)
+		api.EventManager.Advertise("Received", event)
 
 		// Respond with the received product
 		w.Header().Set("Content-Type", "application/json")

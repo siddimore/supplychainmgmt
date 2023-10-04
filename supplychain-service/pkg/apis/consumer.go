@@ -11,15 +11,14 @@ import (
 
 // ConsumerAPI represents the API for the consumer participant.
 type ConsumerAPI struct {
-	BlobService *service.AzureBlobService
+	DBService    *service.MongoDBService
+	EventManager *eventmgr.EventManager
 }
 
-var consumerEventManager = eventmgr.NewEventManager()
-
-// NewConsumerAPI creates a new ConsumerAPI instance.
-func NewConsumerAPI(blobService *service.AzureBlobService) *ConsumerAPI {
+func NewConsumerAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *ConsumerAPI {
 	return &ConsumerAPI{
-		BlobService: blobService,
+		DBService:    dbService,
+		EventManager: eventManager,
 	}
 }
 
@@ -32,13 +31,13 @@ func (api *ConsumerAPI) ConsumeHandler(w http.ResponseWriter, r *http.Request) {
 		product := models.CreateCoffeeProduct("Arabica", "Consumed Arabica beans", 14.99)
 		event := models.Event{Name: "Consumed", Payload: product}
 
-		// Write the event as an immutable blob
-		if err := api.BlobService.WriteBlob(product, "Consumed"); err != nil {
-			http.Error(w, "Failed to write blob", http.StatusInternalServerError)
+		// Write to mongod db
+		if err := api.DBService.Write(product); err != nil {
+			http.Error(w, "Failed to write product to MongoDB", http.StatusInternalServerError)
 			return
 		}
 
-		consumerEventManager.Advertise("Consumed", event)
+		api.EventManager.Advertise("Consumed", event)
 
 		// Respond with the consumed product
 		w.Header().Set("Content-Type", "application/json")

@@ -10,16 +10,20 @@ import (
 )
 
 // FarmerAPI represents the API for the farmer participant.
+// type FarmerAPI struct {
+// 	BlobService *service.AzureBlobService
+// }
+
+// MongodB and EventManager
 type FarmerAPI struct {
-	BlobService *service.AzureBlobService
+	DBService    *service.MongoDBService
+	EventManager *eventmgr.EventManager
 }
 
-var farmerEventManager = eventmgr.NewEventManager()
-// NewFarmerAPI creates a new FarmerAPI instance.
-func NewFarmerAPI(blobService *service.AzureBlobService) *FarmerAPI {
-	//eventManager := eventmgr.NewEventManager()
+func NewFarmerAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *FarmerAPI {
 	return &FarmerAPI{
-		BlobService: blobService,
+		DBService:    dbService,
+		EventManager: eventManager,
 	}
 }
 
@@ -32,13 +36,13 @@ func (api *FarmerAPI) HarvestHandler(w http.ResponseWriter, r *http.Request) {
 		product := models.CreateCoffeeProduct("Arabica", "High-quality Arabica beans", 8.99)
 		event := models.Event{Name: "Harvested", Payload: product}
 
-		// Write the event as an immutable blob
-		if err := api.BlobService.WriteBlob(product, "Harvested"); err != nil {
-			http.Error(w, "Failed to write blob", http.StatusInternalServerError)
+		// Write to MongoDB
+		if err := api.DBService.Write(product); err != nil {
+			http.Error(w, "Failed to write product to MongoDB", http.StatusInternalServerError)
 			return
 		}
 
-		farmerEventManager.Advertise("Harvested", event)
+		api.EventManager.Advertise("Harvested", event)
 		// Respond with the harvested product
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(product)

@@ -16,11 +16,11 @@ import (
 
 // MongodB and EventManager
 type FarmerAPI struct {
-	DBService    *service.MongoDBService
+	DBService    *service.InMemoryDB
 	EventManager *eventmgr.EventManager
 }
 
-func NewFarmerAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *FarmerAPI {
+func NewFarmerAPI(dbService *service.InMemoryDB, eventManager *eventmgr.EventManager) *FarmerAPI {
 	return &FarmerAPI{
 		DBService:    dbService,
 		EventManager: eventManager,

@@ -2,16 +2,16 @@ package models
 
 type EventType string
 
-// const (
-// 	HarvestedEvent EventType = "Harvested"
-// 	ProcessedEvent EventType = "Processed"
-// 	PackedEvent    EventType = "Packed"
-// 	ForSaleEvent   EventType = "ForSale"
-// 	SoldEvent      EventType = "Sold"
-// 	ShippedEvent   EventType = "Shipped"
-// 	ReceivedEvent  EventType = "Received"
-// 	PurchasedEvent EventType = "Purchased"
-// )
+const (
+	HarvestedEvent EventType = "Harvested"
+	ProcessedEvent EventType = "Processed"
+	PackedEvent    EventType = "Packed"
+	ForSaleEvent   EventType = "ForSale"
+	SoldEvent      EventType = "Sold"
+	ShippedEvent   EventType = "Shipped"
+	ReceivedEvent  EventType = "Received"
+	PurchasedEvent EventType = "Purchased"
+)
 
 // type Event struct {
 // 	Type    EventType

@@ -2,6 +2,7 @@ package apis
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"supplychain-service/pkg/models"
@@ -11,11 +12,11 @@ import (
 
 // ConsumerAPI represents the API for the consumer participant.
 type ConsumerAPI struct {
-	DBService    *service.MongoDBService
+	DBService    *service.InMemoryDB
 	EventManager *eventmgr.EventManager
 }
 
-func NewConsumerAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *ConsumerAPI {
+func NewConsumerAPI(dbService *service.InMemoryDB, eventManager *eventmgr.EventManager) *ConsumerAPI {
 	return &ConsumerAPI{
 		DBService:    dbService,
 		EventManager: eventManager,
@@ -24,9 +25,6 @@ func NewConsumerAPI(dbService *service.MongoDBService, eventManager *eventmgr.Ev
 
 // ConsumeHandler handles the "consume" endpoint for the consumer.
 func (api *ConsumerAPI) ConsumeHandler(w http.ResponseWriter, r *http.Request) {
-	// Authenticate the request and check the user's role
-	allowedRoles := []string{"consumer"}
-	if err := AuthMiddleware(allowedRoles, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Create a new coffee product (e.g., purchased from the retailer)
 		product := models.CreateCoffeeProduct("Arabica", "Consumed Arabica beans", 14.99)
 		event := models.Event{Name: "Consumed", Payload: product}
@@ -42,10 +40,11 @@ func (api *ConsumerAPI) ConsumeHandler(w http.ResponseWriter, r *http.Request) {
 		// Respond with the consumed product
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(product)
-	})); err != nil {
-		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
-	}
 }
 
-// ... (
+func (api *ConsumerAPI) EventHandler(event models.Event) {
+	// Handle Harvested event for the farmer here
+	// Decide to Buy
+	fmt.Printf("Consumer received Sold event: %v\n", event)
+}

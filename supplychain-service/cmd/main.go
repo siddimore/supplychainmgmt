@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"github.com/gorilla/mux"
 	"supplychain-service/pkg/apis"
+	"supplychain-service/pkg/models"
 	"supplychain-service/pkg/service"
 	"supplychain-service/pkg/eventmgr"
 )
@@ -15,23 +16,26 @@ type MongoDBConfig struct {
 }
 
 func main() {
+	fmt.Println("This is a log message.")
 	// Initialize immutable blob service (replace with your actual blob service implementation)
 	// TODO: Remove Blob Service
 	// blobService, _ := service.NewAzureBlobService("your-account-name", "your-account-key", "your-container-name")
 
 	// Load MongoDB configuration (you can load this from a configuration file or environment variables)
 	// Init MongoDB
-	mongoDBConfig := MongoDBConfig{
-		ConnectionString: "mongodb://username:password@localhost:27017", // Replace with your MongoDB connection string
-		DatabaseName:     "your-database-name",                          // Replace with your database name
-	}
+	// mongoDBConfig := MongoDBConfig{
+	// 	ConnectionString: "mongodb://username:password@localhost:27017", // Replace with your MongoDB connection string
+	// 	DatabaseName:     "your-database-name",                          // Replace with your database name
+	// }
 
 	// Initialize MongoDB service
-	mongoDBService, err := service.NewMongoDBService(mongoDBConfig.ConnectionString, mongoDBConfig.DatabaseName)
-	if err != nil {
-		fmt.Printf("Failed to connect to MongoDB:", err)
-		return
-	}
+	// mongoDBService, err := service.NewMongoDBService(mongoDBConfig.ConnectionString, mongoDBConfig.DatabaseName)
+	// if err != nil {
+	// 	fmt.Printf("Failed to connect to MongoDB:", err)
+	// 	return
+	// }
+
+	inMemoryDbService := service.NewInMemoryDB()
 
 	// Initialize the event manager
 	eventManager := eventmgr.NewEventManager()
@@ -41,55 +45,39 @@ func main() {
 
 
 	// Initialize API instances for each participant
-	farmerAPI := apis.NewFarmerAPI(mongoDBService, eventManager)
-	distributorAPI := apis.NewDistributorAPI(mongoDBService, eventManager)
-	retailerAPI := apis.NewRetailerAPI(mongoDBService, eventManager)
-	consumerAPI := apis.NewConsumerAPI(mongoDBService, eventManager)
+	farmerAPI := apis.NewFarmerAPI(inMemoryDbService, eventManager)
+	distributorAPI := apis.NewDistributorAPI(inMemoryDbService, eventManager)
+	retailerAPI := apis.NewRetailerAPI(inMemoryDbService, eventManager)
+	consumerAPI := apis.NewConsumerAPI(inMemoryDbService, eventManager)
 
 	// Create a new router instance
 	router := mux.NewRouter()
 
 	// Farmer Endpoints
-	router.HandleFunc("/farmer/harvest", farmerAPI.HarvestHandler).Methods("POST")
+
+	// router.HandleFunc("/farmer/harvest",farmerAPI.HarvestHandler).Methods("POST")
+	router.HandleFunc("/farmer/harvest", apis.AuthMiddleware([]string{"farmer"}, farmerAPI.HarvestHandler)).Methods("POST")
+
 	// Add other farmer endpoints here for processed, packed, for sale, etc.
 
 	// Distributor Endpoints
-	router.HandleFunc("/distributor/receive", distributorAPI.ReceiveHandler).Methods("POST")
+	router.HandleFunc("/distributor/receive", apis.AuthMiddleware([]string{"distributor"}, distributorAPI.ReceiveHandler)).Methods("POST")
+	eventManager.Subscribe(models.HarvestedEvent, distributorAPI.EventHandler)
 	// Add other distributor endpoints here for shipped, etc.
 
 	// Retailer Endpoints
-	router.HandleFunc("/retailer/sell", retailerAPI.SellHandler).Methods("POST")
+	router.HandleFunc("/retailer/sell", apis.AuthMiddleware([]string{"retailerr"}, retailerAPI.SellHandler)).Methods("POST")
+	eventManager.Subscribe(models.ReceivedEvent, retailerAPI.EventHandler)
 	// Add other retailer endpoints here for sold, etc.
 
 	// Consumer Endpoints
-	router.HandleFunc("/consumer/consume", consumerAPI.ConsumeHandler).Methods("POST")
+	router.HandleFunc("/consumer/consume", apis.AuthMiddleware([]string{"consumer"}, consumerAPI.ConsumeHandler)).Methods("POST")
+	eventManager.Subscribe(models.SoldEvent, consumerAPI.EventHandler)
 	// Add other consumer endpoints here for consumed, etc.
 
 	// Serve the API using the router
 	http.Handle("/", router)
 
 	// Start the server on port 8080
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe("127.0.0.1:8080", nil)
 }
-
-
-
-// package main
-
-// import (
-// 	"io"
-// 	"log"
-// 	"net/http"
-// )
-
-// func main() {
-// 	// Hello world, the web server
-
-// 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
-// 		io.WriteString(w, "Hello, world!\n")
-// 	}
-
-// 	http.HandleFunc("/hello", helloHandler)
-//     log.Println("Listing for requests at http://localhost:8000/hello")
-// 	log.Fatal(http.ListenAndServe(":8000", nil))
-// }

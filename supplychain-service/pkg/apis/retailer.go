@@ -11,11 +11,11 @@ import (
 
 // RetailerAPI represents the API for the retailer participant.
 type RetailerAPI struct {
-	DBService    *service.MongoDBService
+	DBService    *service.InMemoryDB
 	EventManager *eventmgr.EventManager
 }
 
-func NewRetailerAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *RetailerAPI {
+func NewRetailerAPI(dbService *service.InMemoryDB, eventManager *eventmgr.EventManager) *RetailerAPI {
 	return &RetailerAPI{
 		DBService:    dbService,
 		EventManager: eventManager,

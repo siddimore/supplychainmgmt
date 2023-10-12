@@ -13,11 +13,11 @@ import (
 // DistributorAPI represents the API for the distributor participant.
 // MongodB and EventManager
 type DistributorAPI struct {
-	DBService    *service.MongoDBService
+	DBService    *service.InMemoryDB
 	EventManager *eventmgr.EventManager
 }
 
-func NewDistributorAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *DistributorAPI {
+func NewDistributorAPI(dbService *service.InMemoryDB, eventManager *eventmgr.EventManager) *DistributorAPI {
 	return &DistributorAPI{
 		DBService:    dbService,
 		EventManager: eventManager,

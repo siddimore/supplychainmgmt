@@ -11,11 +11,11 @@ import (
 
 // ConsumerAPI represents the API for the consumer participant.
 type ConsumerAPI struct {
-	DBService    *service.MongoDBService
+	DBService    *service.InMemoryDB
 	EventManager *eventmgr.EventManager
 }
 
-func NewConsumerAPI(dbService *service.MongoDBService, eventManager *eventmgr.EventManager) *ConsumerAPI {
+func NewConsumerAPI(dbService *service.InMemoryDB, eventManager *eventmgr.EventManager) *ConsumerAPI {
 	return &ConsumerAPI{
 		DBService:    dbService,
 		EventManager: eventManager,

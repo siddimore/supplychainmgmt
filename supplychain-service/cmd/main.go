@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"github.com/gorilla/mux"
 	"supplychain-service/pkg/apis"
@@ -21,17 +20,19 @@ func main() {
 
 	// Load MongoDB configuration (you can load this from a configuration file or environment variables)
 	// Init MongoDB
-	mongoDBConfig := MongoDBConfig{
-		ConnectionString: "mongodb://username:password@localhost:27017", // Replace with your MongoDB connection string
-		DatabaseName:     "your-database-name",                          // Replace with your database name
-	}
+	// mongoDBConfig := MongoDBConfig{
+	// 	ConnectionString: "mongodb://username:password@localhost:27017", // Replace with your MongoDB connection string
+	// 	DatabaseName:     "your-database-name",                          // Replace with your database name
+	// }
 
 	// Initialize MongoDB service
-	mongoDBService, err := service.NewMongoDBService(mongoDBConfig.ConnectionString, mongoDBConfig.DatabaseName)
-	if err != nil {
-		fmt.Printf("Failed to connect to MongoDB:", err)
-		return
-	}
+	// mongoDBService, err := service.NewMongoDBService(mongoDBConfig.ConnectionString, mongoDBConfig.DatabaseName)
+	// if err != nil {
+	// 	fmt.Printf("Failed to connect to MongoDB:", err)
+	// 	return
+	// }
+
+	inMemoryDbService := service.NewInMemoryDB()
 
 	// Initialize the event manager
 	eventManager := eventmgr.NewEventManager()
@@ -41,10 +42,10 @@ func main() {
 
 
 	// Initialize API instances for each participant
-	farmerAPI := apis.NewFarmerAPI(mongoDBService, eventManager)
-	distributorAPI := apis.NewDistributorAPI(mongoDBService, eventManager)
-	retailerAPI := apis.NewRetailerAPI(mongoDBService, eventManager)
-	consumerAPI := apis.NewConsumerAPI(mongoDBService, eventManager)
+	farmerAPI := apis.NewFarmerAPI(inMemoryDbService, eventManager)
+	distributorAPI := apis.NewDistributorAPI(inMemoryDbService, eventManager)
+	retailerAPI := apis.NewRetailerAPI(inMemoryDbService, eventManager)
+	consumerAPI := apis.NewConsumerAPI(inMemoryDbService, eventManager)
 
 	// Create a new router instance
 	router := mux.NewRouter()
@@ -71,25 +72,3 @@ func main() {
 	// Start the server on port 8080
 	http.ListenAndServe(":8080", nil)
 }
-
-
-
-// package main
-
-// import (
-// 	"io"
-// 	"log"
-// 	"net/http"
-// )
-
-// func main() {
-// 	// Hello world, the web server
-
-// 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
-// 		io.WriteString(w, "Hello, world!\n")
-// 	}
-
-// 	http.HandleFunc("/hello", helloHandler)
-//     log.Println("Listing for requests at http://localhost:8000/hello")
-// 	log.Fatal(http.ListenAndServe(":8000", nil))
-// }

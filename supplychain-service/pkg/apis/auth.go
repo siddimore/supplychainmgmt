@@ -1,45 +1,53 @@
 package apis
 
 import (
-	//"encoding/json"
+	"fmt"
 	"net/http"
 	"github.com/dgrijalva/jwt-go"
+
+	"strings"
 )
 
 var jwtSecret = []byte("your-secret-key")
 
-// AuthMiddleware is a middleware for JWT authentication and role-based authorization.
-func AuthMiddleware(allowedRoles []string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func AuthMiddleware(allowedRoles []string, next http.HandlerFunc) http.HandlerFunc {
+	fmt.Println("In AuthMiddleWare.")
+
+	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
+		fmt.Println("TokenString", tokenString)
 		if tokenString == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+		fmt.Println("TokenString", tokenString)
+		token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return jwtSecret, nil
 		})
 
-		if err != nil || !token.Valid {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+		fmt.Println("Token", token)
 
 		claims, ok := token.Claims.(jwt.MapClaims)
+		for index,claim := range claims {
+			fmt.Println("Index: %d, Value: %s\n", index, claim)
+		}
 		if !ok {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		userRole, ok := claims["role"].(string)
+		fmt.Println("UserRole", userRole)
 		if !ok || !containsRole(userRole, allowedRoles) {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 
 		next.ServeHTTP(w, r)
-	})
+	}
 }
 
 func containsRole(role string, roles []string) bool {

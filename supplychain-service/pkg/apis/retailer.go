@@ -2,6 +2,7 @@ package apis
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"supplychain-service/pkg/models"
@@ -24,9 +25,6 @@ func NewRetailerAPI(dbService *service.InMemoryDB, eventManager *eventmgr.EventM
 
 // SellHandler handles the "sell" endpoint for the retailer.
 func (api *RetailerAPI) SellHandler(w http.ResponseWriter, r *http.Request) {
-	// Authenticate the request and check the user's role
-	allowedRoles := []string{"retailer"}
-	if err := AuthMiddleware(allowedRoles, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Create a new coffee product (e.g., received from the distributor)
 		product := models.CreateCoffeeProduct("Arabica", "Sold Arabica beans", 13.99)
 		event := models.Event{Name: "Sold", Payload: product}
@@ -42,8 +40,11 @@ func (api *RetailerAPI) SellHandler(w http.ResponseWriter, r *http.Request) {
 		// Respond with the sold product
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(product)
-	})); err != nil {
-		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
-	}
+}
+
+func (api *RetailerAPI) EventHandler(event models.Event) {
+	// Handle Harvested event for the farmer here
+	// Decide to Sell
+	fmt.Printf("Retailer received Distributor event: %v\n", event)
 }

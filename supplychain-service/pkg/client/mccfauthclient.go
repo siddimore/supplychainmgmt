@@ -15,6 +15,7 @@ func Create() (*http.Client, error) {
 	// Load client certificate and key
 	// TODO: fetch this cert from keyvault
 	// Load Sample Cert
+	// TODO: Use actual MCCF cert for authz instead
 	cert, err := tls.LoadX509KeyPair("client.crt", "client.key")
 	if err != nil {
 		return nil, fmt.Errorf("error loading client certificate and key: %v", err)

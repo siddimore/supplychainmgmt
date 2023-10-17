@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"github.com/gorilla/mux"
 	"supplychain-service/pkg/apis"
+	"supplychain-service/pkg/client"
 	"supplychain-service/pkg/models"
 	"supplychain-service/pkg/service"
 	"supplychain-service/pkg/eventmgr"
@@ -40,6 +41,15 @@ func main() {
 	// Initialize the event manager
 	eventManager := eventmgr.NewEventManager()
 
+	// Create MCCF client
+	_, err := mccfclient.Create()
+	if err != nil {
+		fmt.Println("Error creating HTTP client:", err)
+		return
+	}
+
+	// TODO use above client to authenticate
+
 	// TODO: Above can be injected using GoContainers 
 	// ex: https://github.com/vardius/gocontainer?utm_campaign=awesomego&utm_medium=referral&utm_source=awesomego
 
@@ -53,25 +63,24 @@ func main() {
 	// Create a new router instance
 	router := mux.NewRouter()
 
+	// TODO: Update all endpoint handlefunc to use MCCF.Authz instead
 	// Farmer Endpoints
-
-	// router.HandleFunc("/farmer/harvest",farmerAPI.HarvestHandler).Methods("POST")
 	router.HandleFunc("/farmer/harvest", apis.AuthMiddleware([]string{"farmer"}, farmerAPI.HarvestHandler)).Methods("POST")
-
-	// Add other farmer endpoints here for processed, packed, for sale, etc.
 
 	// Distributor Endpoints
 	router.HandleFunc("/distributor/receive", apis.AuthMiddleware([]string{"distributor"}, distributorAPI.ReceiveHandler)).Methods("POST")
+	// Subscribe to HaverstedEvent by Farmer and handle it
 	eventManager.Subscribe(models.HarvestedEvent, distributorAPI.EventHandler)
 	// Add other distributor endpoints here for shipped, etc.
 
 	// Retailer Endpoints
 	router.HandleFunc("/retailer/sell", apis.AuthMiddleware([]string{"retailerr"}, retailerAPI.SellHandler)).Methods("POST")
+	// Subscribe to ReceivedEvent by Distributor and handle it
 	eventManager.Subscribe(models.ReceivedEvent, retailerAPI.EventHandler)
-	// Add other retailer endpoints here for sold, etc.
 
 	// Consumer Endpoints
 	router.HandleFunc("/consumer/consume", apis.AuthMiddleware([]string{"consumer"}, consumerAPI.ConsumeHandler)).Methods("POST")
+	// Subscribe to SoldEvent by Retailer and handle it
 	eventManager.Subscribe(models.SoldEvent, consumerAPI.EventHandler)
 	// Add other consumer endpoints here for consumed, etc.
 

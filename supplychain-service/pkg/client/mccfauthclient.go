@@ -104,9 +104,15 @@ func (c *CustomHTTPClient) AuthorizeAccess(path string, next http.HandlerFunc) h
 		}
 	
 		// Access the parsed data using the struct field
-		fmt.Printf("Allowed: %v\n", responseData.Allowed)
+		fmt.Printf("Mccf Client Response Allowed: %v\n", responseData.Allowed)
 
-	next.ServeHTTP(w, r)
+		if responseData.Allowed {
+			next.ServeHTTP(w, r)
+		}else{
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+		}
+
 	}
 }
 

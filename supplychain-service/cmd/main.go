@@ -43,8 +43,8 @@ func main() {
 	// // Initialize the event manager
 	eventManager := eventmgr.NewEventManager()
 
-	// Create MCCF client
-	client, err := mccfclient.Create()
+	// Create MCCF client for Decentralized Authz
+	authzClient, err := mccfclient.Create()
 	if err != nil {
 		fmt.Println("Error creating HTTP client:", err)
 		return
@@ -70,21 +70,21 @@ func main() {
 	// // Farmer Endpoints
 	
 	// router.HandleFunc("/farmer/harvest", apis.AuthMiddleware([]string{"farmer"}, farmerAPI.HarvestHandler)).Methods("POST")
-	router.HandleFunc("/farmer/harvest", client.AuthorizeAccess("886ddc0bd4f89adbf1e6ef81d66163b4e86202464d8131530d1468094d373ea3/action/harvested", farmerAPI.HarvestHandler)).Methods("POST")
+	router.HandleFunc("/farmer/harvest", authzClient.AuthorizeAccess("886ddc0bd4f89adbf1e6ef81d66163b4e86202464d8131530d1468094d373ea3/action/harvested", farmerAPI.HarvestHandler)).Methods("POST")
 
 	// Distributor Endpoints
-	router.HandleFunc("/distributor/receive", apis.AuthMiddleware([]string{"distributor"}, distributorAPI.ReceiveHandler)).Methods("POST")
+	router.HandleFunc("/distributor/receive", authzClient.AuthorizeAccess("58ac36072ec568adc72d8a04dd2ae99b4d810ab373c0eec4323cb6652e4776e2/action/received", distributorAPI.ReceiveHandler)).Methods("POST")
 	// Subscribe to HaverstedEvent by Farmer and handle it
 	eventManager.Subscribe(models.HarvestedEvent, distributorAPI.EventHandler)
 	// Add other distributor endpoints here for shipped, etc.
 
 	// Retailer Endpoints
-	router.HandleFunc("/retailer/sell", apis.AuthMiddleware([]string{"retailerr"}, retailerAPI.SellHandler)).Methods("POST")
+	router.HandleFunc("/retailer/sell", authzClient.AuthorizeAccess("0ac065deee073918ff159282f521e4716aecf9b73f761dea925f21721a46ae81", retailerAPI.SellHandler)).Methods("POST")
 	// Subscribe to ReceivedEvent by Distributor and handle it
 	eventManager.Subscribe(models.ReceivedEvent, retailerAPI.EventHandler)
 
 	// Consumer Endpoints
-	router.HandleFunc("/consumer/consume", apis.AuthMiddleware([]string{"consumer"}, consumerAPI.ConsumeHandler)).Methods("POST")
+	router.HandleFunc("/consumer/consume", authzClient.AuthorizeAccess("eec867e122818210a3ef92409d0870d14ac345b39596e608fad0ca94f40d8ff5", consumerAPI.ConsumeHandler)).Methods("POST")
 	// Subscribe to SoldEvent by Retailer and handle it
 	eventManager.Subscribe(models.SoldEvent, consumerAPI.EventHandler)
 	// Add other consumer endpoints here for consumed, etc.

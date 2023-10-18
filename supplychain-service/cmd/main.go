@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	// "io/ioutil"
 	"net/http"
 	"github.com/gorilla/mux"
 	"supplychain-service/pkg/apis"
@@ -36,36 +37,40 @@ func main() {
 	// 	return
 	// }
 
+	// Create InMemoryDBService
 	inMemoryDbService := service.NewInMemoryDB()
 
-	// Initialize the event manager
+	// // Initialize the event manager
 	eventManager := eventmgr.NewEventManager()
 
 	// Create MCCF client
-	_, err := mccfclient.Create()
+	client, err := mccfclient.Create()
 	if err != nil {
 		fmt.Println("Error creating HTTP client:", err)
 		return
 	}
 
-	// TODO use above client to authenticate
-
 	// TODO: Above can be injected using GoContainers 
 	// ex: https://github.com/vardius/gocontainer?utm_campaign=awesomego&utm_medium=referral&utm_source=awesomego
-
-
 	// Initialize API instances for each participant
+	// This API works with mccfAuthz 
 	farmerAPI := apis.NewFarmerAPI(inMemoryDbService, eventManager)
+
+	// This API needs to be updated with mccfAuthz 
 	distributorAPI := apis.NewDistributorAPI(inMemoryDbService, eventManager)
+	// This API needs to be updated with mccfAuthz 
 	retailerAPI := apis.NewRetailerAPI(inMemoryDbService, eventManager)
+	// This API needs to be updated with mccfAuthz 	
 	consumerAPI := apis.NewConsumerAPI(inMemoryDbService, eventManager)
 
-	// Create a new router instance
+	// // Create a new router instance
 	router := mux.NewRouter()
 
-	// TODO: Update all endpoint handlefunc to use MCCF.Authz instead
-	// Farmer Endpoints
-	router.HandleFunc("/farmer/harvest", apis.AuthMiddleware([]string{"farmer"}, farmerAPI.HarvestHandler)).Methods("POST")
+	// // TODO: Update all endpoint handlefunc to use MCCF.Authz instead
+	// // Farmer Endpoints
+	
+	// router.HandleFunc("/farmer/harvest", apis.AuthMiddleware([]string{"farmer"}, farmerAPI.HarvestHandler)).Methods("POST")
+	router.HandleFunc("/farmer/harvest", client.AuthorizeAccess("886ddc0bd4f89adbf1e6ef81d66163b4e86202464d8131530d1468094d373ea3/action/harvested", farmerAPI.HarvestHandler)).Methods("POST")
 
 	// Distributor Endpoints
 	router.HandleFunc("/distributor/receive", apis.AuthMiddleware([]string{"distributor"}, distributorAPI.ReceiveHandler)).Methods("POST")
@@ -84,9 +89,9 @@ func main() {
 	eventManager.Subscribe(models.SoldEvent, consumerAPI.EventHandler)
 	// Add other consumer endpoints here for consumed, etc.
 
-	// Serve the API using the router
+	// // Serve the API using the router
 	http.Handle("/", router)
 
-	// Start the server on port 8080
+	// // Start the server on port 8080
 	http.ListenAndServe("127.0.0.1:8080", nil)
 }

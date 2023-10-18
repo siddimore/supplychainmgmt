@@ -1,0 +1,7 @@
+This is a log message.
+In AuthMiddleWare.
+In AuthMiddleWare.
+In AuthMiddleWare.
+Allowed: true
+In HarvestHandler.
+Distributor received Harvested event: {Harvested 0xc00031c0c0}

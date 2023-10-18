@@ -2,27 +2,54 @@ package mccfclient
 
 
 import (
-	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 )
 
+type CustomHTTPClient struct {
+	client *http.Client
+}
+
+type ResponseData struct {
+	Allowed bool `json:"allowed"`
+}
+
 // Create Client with cerrt and private key
-func Create() (*http.Client, error) {
+func Create() (*CustomHTTPClient, error) {
+
 	// Load client certificate and key
 	// TODO: fetch this cert from keyvault
-	// Load Sample Cert
-	// TODO: Use actual MCCF cert for authz instead
-	cert, err := tls.LoadX509KeyPair("client.crt", "client.key")
+	var clientCertPath = "./pkg/client/client.pem"
+	var clientKeyPath = "./pkg/client/client_privk.pem"
+	var caCertPath = "./pkg/client/servicecert.pem"
+
+	clientCertPath, err := filepath.Abs(clientCertPath)
+	if err != nil {
+		return nil, err
+	}
+
+	clientKeyPath, err = filepath.Abs(clientKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	caCertPath, err = filepath.Abs(caCertPath)
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("error loading client certificate and key: %v", err)
 	}
 
 	// This is a self signed cerrt
-	caCert, err := ioutil.ReadFile("client.crt")
+	caCert, err := ioutil.ReadFile(caCertPath)
 	if err != nil {
 		return nil, fmt.Errorf("error loading Self certificate: %v", err)
 	}
@@ -36,32 +63,50 @@ func Create() (*http.Client, error) {
 	}
 
 	// Create and return the HTTP client with the TLS configuration
-	return &http.Client{
+	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 		},
-	}, nil
+	}
+
+return &CustomHTTPClient{client: client}, nil
 }
 
-func AuthorizeAccess(client *http.Client, url string, requestBody []byte) ([]byte, error) {
-	// Send the HTTP POST request
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(requestBody))
+
+func (c *CustomHTTPClient) AuthorizeAccess(path string, next http.HandlerFunc) http.HandlerFunc  {
+	return func(w http.ResponseWriter, r *http.Request) {
+	const baseUrl = "https://decentralized-rbac-1.confidential-ledger.azure.com/app/"
+	response, err := c.client.Get(baseUrl + path)
 	if err != nil {
-		return nil, fmt.Errorf("error sending POST request: %v", err)
+		panic(err)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	// Read response body
-	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %v", err)
+		return
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	// Read and use the response body as needed
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		fmt.Printf("Error reading response body: %v\n", err)
+		return
 	}
 
-	return responseBody, nil
+		// Create a struct variable to hold the parsed JSON data
+		var responseData ResponseData
+
+		// Unmarshal the JSON data into the struct
+		err = json.Unmarshal(body, &responseData)
+		if err != nil {
+			fmt.Printf("Error parsing JSON: %v\n", err)
+			return
+		}
+	
+		// Access the parsed data using the struct field
+		fmt.Printf("Allowed: %v\n", responseData.Allowed)
+
+	next.ServeHTTP(w, r)
+	}
 }
-
 

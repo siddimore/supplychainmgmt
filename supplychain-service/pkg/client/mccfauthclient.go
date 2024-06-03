@@ -1,4 +1,4 @@
-package mccfclient
+package client
 
 
 import (
@@ -75,7 +75,7 @@ return &CustomHTTPClient{client: client}, nil
 
 func (c *CustomHTTPClient) AuthorizeAccess(path string, next http.HandlerFunc) http.HandlerFunc  {
 	return func(w http.ResponseWriter, r *http.Request) {
-	const baseUrl = "https://decentralized-rbac-1.confidential-ledger.azure.com/app/"
+	const baseUrl = "https://decentralized-rbac-1.com/app/"
 	response, err := c.client.Get(baseUrl + path)
 	if err != nil {
 		panic(err)
@@ -104,7 +104,7 @@ func (c *CustomHTTPClient) AuthorizeAccess(path string, next http.HandlerFunc) h
 		}
 	
 		// Access the parsed data using the struct field
-		fmt.Printf("Mccf Client Response Allowed: %v\n", responseData.Allowed)
+		fmt.Printf("Client Response Allowed: %v\n", responseData.Allowed)
 
 		if responseData.Allowed {
 			next.ServeHTTP(w, r)
